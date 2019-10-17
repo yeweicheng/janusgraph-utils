@@ -16,8 +16,11 @@
 package com.ibm.janusgraph.utils.importer.schema;
 
 import com.ibm.janusgraph.utils.schema.JanusGraphSONSchema;
+import org.apache.tinkerpop.gremlin.server.Settings;
+import org.janusgraph.core.ConfiguredGraphFactory;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphFactory;
+import org.janusgraph.graphdb.management.JanusGraphManager;
 
 public class SchemaLoader {
 
@@ -29,25 +32,33 @@ public class SchemaLoader {
         importer.readFile(schemaFile);
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
 
-        if (null == args || args.length < 2) {
-            System.err.println("Usage: SchemaLoader <janusgraph-config-file> <schema-file>");
+        if (null == args || args.length < 3) {
+            System.err.println("Usage: SchemaLoader <janusgraph-config-file> <schema-file> [graph-name]");
             System.exit(1);
         }
 
         String configFile = args[0];
         String schemaFile = args[1];
+        String graphName = args[2];
 
         // use custom or default config file to get JanusGraph
-        JanusGraph g = JanusGraphFactory.open(configFile);
+        JanusGraph graph;
+        if (configFile.endsWith(".json")) {
+            graph = JanusGraphFactory.open(configFile);
+        } else {
+            new JanusGraphManager(Settings.read(configFile));
+            graph = ConfiguredGraphFactory.open(graphName);
+        }
 
         try {
-            new SchemaLoader().loadSchema(g, schemaFile);
+            new SchemaLoader().loadSchema(graph, schemaFile);
         } catch (Exception e) {
             System.out.println("Failed to import schema due to " + e.getMessage());
         } finally {
-            g.close();
+            graph.close();
+            System.exit(0);
         }
 
     }
