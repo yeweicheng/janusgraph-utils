@@ -36,9 +36,10 @@ import com.ibm.janusgraph.utils.generator.bean.RelationBean;
 import com.ibm.janusgraph.utils.generator.bean.VertexLabelBean;
 import com.ibm.janusgraph.utils.generator.bean.VertexMapBean;
 import com.ibm.janusgraph.utils.generator.bean.VertexTypeBean;
+
 public class GSONUtil {
 
-    public static GSONSchema loadSchema(String gsonSchemaFile){
+    public static GSONSchema loadSchema(String gsonSchemaFile) {
         ObjectMapper mapper = new ObjectMapper();
         try {
             return mapper.readValue(new File(gsonSchemaFile), GSONSchema.class);
@@ -47,38 +48,39 @@ public class GSONUtil {
         }
     }
 
-    public static void writeToFile(String jsonOutputFile,Object gson){
+    public static void writeToFile(String jsonOutputFile, Object gson) {
         ObjectMapper mapper = new ObjectMapper();
         mapper.enable(SerializationFeature.INDENT_OUTPUT);
         try {
             mapper.writeValue(new File(jsonOutputFile), gson);
-            System.out.println("Generated: "+ jsonOutputFile);
+            System.out.println("Generated: " + jsonOutputFile);
         } catch (Exception e) {
             // TODO Auto-generated catch block
             throw new RuntimeException(e.toString());
         }
 
     }
-    public static BatchImporterDataMap toDataMap(String csvConfigFile){
+
+    public static BatchImporterDataMap toDataMap(String csvConfigFile) {
         BatchImporterDataMap bmDataMap = new BatchImporterDataMap();
         CSVConfig csvConf = CSVGenerator.loadConfig(csvConfigFile);
-        for(VertexTypeBean type: csvConf.VertexTypes){
+        for (VertexTypeBean type : csvConf.VertexTypes) {
             String vertexFileName = type.name + ".csv";
             VertexMapBean vertex = new VertexMapBean(type.name);
-            for (String key: type.columns.keySet()){
+            for (String key : type.columns.keySet()) {
                 vertex.maps.put(key, key);
             }
-            bmDataMap.vertexMap.put(vertexFileName,vertex.maps);
+            bmDataMap.vertexMap.put(vertexFileName, vertex.maps);
         }
 
-        for(EdgeTypeBean type: csvConf.EdgeTypes){
-            for (RelationBean relation: type.relations) {
+        for (EdgeTypeBean type : csvConf.EdgeTypes) {
+            for (RelationBean relation : type.relations) {
                 /*Ex: <left-label>_<edgeType>_<right-label>_edges.csv    */
                 String edgeFileName = String.join("_",
-                                                  relation.left,
-                                                  type.name,
-                                                  relation.right,
-                                                  "edges.csv");
+                        relation.left,
+                        type.name,
+                        relation.right,
+                        "edges.csv");
                 EdgeMapBean vertex = new EdgeMapBean(type.name);
                 Map<String, String> subMap = new HashMap<>();
                 Map<String, String> subMap2 = new HashMap<>();
@@ -91,12 +93,13 @@ public class GSONUtil {
                         vertex.maps.put(key, key);
                     }
                 }
-            bmDataMap.edgeMap.put(edgeFileName,vertex.maps);
+                bmDataMap.edgeMap.put(edgeFileName, vertex.maps);
             }
         }
         return bmDataMap;
     }
-    public static GSONSchema configToSchema(String csvConfPath){
+
+    public static GSONSchema configToSchema(String csvConfPath, String graphName) {
         GSONSchema gsonschema = new GSONSchema();
         CSVConfig csvConf = CSVGenerator.loadConfig(csvConfPath);
 
@@ -104,56 +107,57 @@ public class GSONUtil {
         PropertyKeyBean nodeIdKey = new PropertyKeyBean("node_id", "Integer");
         gsonschema.propertyKeys.add(nodeIdKey);
         IndexBean nodeIdIndex = new IndexBean(
-                                    "node_id_comp",
-                                    Arrays.asList("node_id"),
-                                    true,
-                                    true,
-                                    null,
-                                    null);
+                graphName + "_node_id_comp",
+                Arrays.asList("node_id"),
+                true,
+                true,
+                null,
+                null);
         gsonschema.vertexIndexes.add(nodeIdIndex);
 
         //Extract columns under VertexTypes from csv config and add to propertyKeys
-        for (VertexTypeBean type : csvConf.VertexTypes){
+        for (VertexTypeBean type : csvConf.VertexTypes) {
             //add vertexLabels
             VertexLabelBean vertexLabel = new VertexLabelBean(type.name);
             gsonschema.vertexLabels.add(vertexLabel);
 
             //add propertyKeys
-            for (Entry<String,ColumnBean> col : type.columns.entrySet()){
+            for (Entry<String, ColumnBean> col : type.columns.entrySet()) {
                 String propertyKeyName = col.getKey();
                 String propertyKeyType = col.getValue().dataType;
                 boolean compositIndex = col.getValue().composit;
+                boolean unique = col.getValue().unique;
                 String indexOnly = col.getValue().indexOnly;
                 String mixedIndex = col.getValue().mixedIndex;
 
                 //test key does not exist before adding
                 if (null == gsonschema.getPropertyKey(propertyKeyName)) {
                     gsonschema.propertyKeys.add(
-                            new PropertyKeyBean(propertyKeyName,propertyKeyType));
+                            new PropertyKeyBean(propertyKeyName, propertyKeyType));
                 }
 
                 //add composit vertex indexes if any
-                if(compositIndex == true) {
+                if (compositIndex == true) {
                     IndexBean index = new IndexBean(
-                                        String.join("_", propertyKeyName, "comp"),
-                                        Arrays.asList(propertyKeyName),
-                                        compositIndex,
-                                        false,
-                                        indexOnly,
-                                        null);
+                            String.join("_", graphName, propertyKeyName, "comp"),
+                            Arrays.asList(propertyKeyName),
+                            compositIndex,
+                            unique,
+                            indexOnly,
+                            null);
                     if (null == gsonschema.getVertexIndex(index.name)) {
                         gsonschema.vertexIndexes.add(index);
                     }
                 }
                 //add mixed vertex index if any
-                if(mixedIndex != null) {
+                if (mixedIndex != null) {
                     IndexBean index = new IndexBean(
-                                        String.join("_", propertyKeyName, "mixed"),
-                                        Arrays.asList(propertyKeyName),
-                                        false,
-                                        false,
-                                        indexOnly,
-                                        mixedIndex);
+                            String.join("_", graphName, propertyKeyName, "mixed"),
+                            Arrays.asList(propertyKeyName),
+                            false,
+                            unique,
+                            indexOnly,
+                            mixedIndex);
                     if (null == gsonschema.getVertexIndex(index.name)) {
                         gsonschema.vertexIndexes.add(index);
                     }
@@ -162,7 +166,7 @@ public class GSONUtil {
         }
 
         //extract edge properties from csv config and add to propertyKeys
-        for (EdgeTypeBean type : csvConf.EdgeTypes){
+        for (EdgeTypeBean type : csvConf.EdgeTypes) {
             EdgeLabelBean edgeLabel = new EdgeLabelBean(type.name, type.multiplicity);
             gsonschema.edgeLabels.add(edgeLabel);
             if (type.columns != null) {
@@ -171,34 +175,35 @@ public class GSONUtil {
                     String propertyKeyName = col.getKey();
                     String propertyKeyType = col.getValue().dataType;
                     boolean compositIndex = col.getValue().composit;
+                    boolean unique = col.getValue().unique;
                     String indexOnly = col.getValue().indexOnly;
                     String mixedIndex = col.getValue().mixedIndex;
                     gsonschema.propertyKeys.add(new PropertyKeyBean(
-                                                        propertyKeyName,
-                                                        propertyKeyType));
+                            propertyKeyName,
+                            propertyKeyType));
 
                     //add composit edgeIndex if any
                     if (compositIndex == true) {
                         IndexBean index = new IndexBean(
-                                              String.join("_", propertyKeyName, "comp"),
-                                              Arrays.asList(propertyKeyName),
-                                              compositIndex,
-                                              false,
-                                              indexOnly,
-                                              mixedIndex);
+                                String.join("_", graphName, propertyKeyName, "comp"),
+                                Arrays.asList(propertyKeyName),
+                                compositIndex,
+                                unique,
+                                indexOnly,
+                                mixedIndex);
                         if (null == gsonschema.getEdgeIndex(index.name)) {
                             gsonschema.edgeIndexes.add(index);
                         }
                     }
                     //add mixed edgeIndex if any
-                    if(mixedIndex != null) {
+                    if (mixedIndex != null) {
                         IndexBean index = new IndexBean(
-                                            String.join("_", propertyKeyName, "mixed"),
-                                            Arrays.asList(propertyKeyName),
-                                            false,
-                                            false,
-                                            indexOnly,
-                                            mixedIndex);
+                                String.join("_", graphName, propertyKeyName, "mixed"),
+                                Arrays.asList(propertyKeyName),
+                                false,
+                                unique,
+                                indexOnly,
+                                mixedIndex);
                         if (null == gsonschema.getEdgeIndex(index.name)) {
                             gsonschema.edgeIndexes.add(index);
                         }

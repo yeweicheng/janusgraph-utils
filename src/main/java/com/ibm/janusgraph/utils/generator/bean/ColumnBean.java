@@ -25,6 +25,7 @@ public class ColumnBean {
     @JsonDeserialize(as=String.class)
     public String mixedIndex = null;
     public String indexOnly;
+    public boolean unique = false;
     public String dataSubType; //to support sub categories of certain dataTypes
     public Map<String, String> dateRange = null;
     public String dateFormat = null;

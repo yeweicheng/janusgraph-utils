@@ -17,30 +17,31 @@ package com.ibm.janusgraph.utils.generator;
 
 public class JanusGraphBench {
 
-    public JanusGraphBench(String csvConfPath){
+    public JanusGraphBench(String csvConfPath) {
 
     }
 
-    static void prepareCSV(String csvConfPath, String outputDirectory){
+    static void prepareCSV(String csvConfPath, String outputDirectory) {
         CSVGenerator csv = new CSVGenerator(csvConfPath);
-        System.out.println("Loaded csv config file: "+ csvConfPath);
+        System.out.println("Loaded csv config file: " + csvConfPath);
         csv.writeAllCSVs(outputDirectory);
     }
 
     public static void main(String[] args) {
-        if (null == args || args.length < 2) {
-            System.err.println("Usage: JanusGraphBench <csv-config-file> <mapper-schema-output-directory>");
+        if (null == args || args.length < 3) {
+            System.err.println("Usage: JanusGraphBench <csv-config-file> <mapper-schema-output-directory> <graph-name>");
             System.exit(1);
         }
-       try {
-        String csvConfPath = args[0];
-           prepareCSV(csvConfPath, args[1]);
-           GSONUtil.writeToFile(args[1] + "/schema.json",GSONUtil.configToSchema(csvConfPath));
-           GSONUtil.writeToFile(args[1] + "/datamapper.json", GSONUtil.toDataMap(csvConfPath));
-    } catch (Exception e) {
-        System.err.println(e.getMessage());
-        System.exit(1);
-    }
+        try {
+            String csvConfPath = args[0];
+            prepareCSV(csvConfPath, args[1]);
+            String graphName = args[2];
+            GSONUtil.writeToFile(args[1] + "/schema.json", GSONUtil.configToSchema(csvConfPath, graphName));
+            GSONUtil.writeToFile(args[1] + "/datamapper.json", GSONUtil.toDataMap(csvConfPath));
+        } catch (Exception e) {
+            System.err.println(e.getMessage());
+            System.exit(1);
+        }
 
     }
 }
