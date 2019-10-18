@@ -1,5 +1,10 @@
 [![Build Status](https://api.travis-ci.org/IBM/janusgraph-utils.svg?branch=master)](https://travis-ci.org/IBM/janusgraph-utils)
 
+## Remarks
+* forked from IBM/janusgraph-utils
+* Support for JanusGraph version 0.4.0
+* Support for ConfiguredGraphFactory mode
+
 # Develop a graph database app using JanusGraph
 
 This Code Pattern contains sample data and code for running a Twitter-like application in JanusGraph. The utility code illustrates how to use OLTP APIs to define schema, ingest data, and query graph. Developers can use or modify the code to build and operate their custom graph applications, or create similar java and groovy files to interact with JanusGraph.
