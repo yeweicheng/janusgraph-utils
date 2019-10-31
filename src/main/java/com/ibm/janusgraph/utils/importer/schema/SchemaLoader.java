@@ -49,7 +49,14 @@ public class SchemaLoader {
             graph = JanusGraphFactory.open(configFile);
         } else {
             new JanusGraphManager(Settings.read(configFile));
-            graph = ConfiguredGraphFactory.open(graphName);
+            try {
+                ConfiguredGraphFactory.drop(graphName);
+            } catch (Exception e) {
+                if (!(e instanceof NullPointerException)) {
+                    throw e;
+                }
+            }
+            graph = ConfiguredGraphFactory.create(graphName);
         }
 
         try {

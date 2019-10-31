@@ -38,7 +38,14 @@ public class BatchImport {
             graph = JanusGraphFactory.open(args[0]);
         } else {
             new JanusGraphManager(Settings.read(args[0]));
-            graph = ConfiguredGraphFactory.open(args[4]);
+            try {
+                ConfiguredGraphFactory.drop(args[4]);
+            } catch (Exception e) {
+                if (!(e instanceof NullPointerException)) {
+                    throw e;
+                }
+            }
+            graph = ConfiguredGraphFactory.create(args[4]);
         }
 
         if (!(args.length > 5 && args[5].equals("skipSchema")))
